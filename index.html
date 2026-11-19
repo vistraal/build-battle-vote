@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Build Battle · Vote</title>
+<meta name="description" content="Vote for the best student portfolio site. One vote per person, never for yourself.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230066CC'/%3E%3Cpath d='M18 34l10 10 18-22' stroke='%23fff' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="logo"></span><span id="title">Build Battle</span></div>
+    <div class="me" id="me" hidden><span id="meEmail"></span><button class="link" id="signOut">Sign out</button></div>
+  </div>
+</header>
+
+<main class="wrap" id="main">
+
+  <!-- 0. not configured yet -->
+  <section id="vSetup" hidden>
+    <h1>Almost ready</h1>
+    <p class="lead">This voting site is deployed but not connected to Firebase yet. The organiser pastes the Firebase config into <code>firebase-config.js</code> and redeploys. Nothing to do if you are a student — check back in a few minutes.</p>
+  </section>
+
+  <!-- 1. sign in -->
+  <section id="vSignIn" hidden>
+    <h1>Vote for the best site</h1>
+    <p class="lead">Sign in with Google to see the gallery. One vote per person, and never for your own site.</p>
+    <button class="primary big" id="signIn">Sign in with Google</button>
+    <p class="muted" id="domainNote" hidden></p>
+    <p class="error" id="signInErr" hidden></p>
+  </section>
+
+  <!-- 2. first run: becomes organiser -->
+  <section id="vFirstRun" hidden>
+    <h1>First run</h1>
+    <p class="lead">Nobody has set this vote up yet. The first person to continue becomes the organiser (can open and close voting, see live results, remove sites).</p>
+    <label>Title shown to students <input id="fTitle" value="Build Battle" maxlength="40"></label>
+    <label>Only allow this email domain (leave empty for any Google account) <input id="fDomain" placeholder="mits.ac.in"></label>
+    <button class="primary" id="fCreate">Continue as organiser</button>
+    <p class="error" id="fErr" hidden></p>
+  </section>
+
+  <!-- 3. register my site -->
+  <section id="vRegister" hidden>
+    <h1>Add your site</h1>
+    <p class="lead">Put your published site in the gallery first. You can edit it later. Then vote for someone else.</p>
+    <label>Your name <input id="rName" maxlength="60" placeholder="Ravi Kumar"></label>
+    <label>Live URL <input id="rUrl" type="url" maxlength="200" placeholder="https://ravikumar.sitesfare.app"></label>
+    <div class="row">
+      <button class="primary" id="rSave">Save my site</button>
+      <button class="ghost" id="rSkip">I don't have a site, just vote</button>
+    </div>
+    <p class="error" id="rErr" hidden></p>
+  </section>
+
+  <!-- 4. gallery + vote -->
+  <section id="vGallery" hidden>
+    <div class="banner" id="status"></div>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Search by number or name">
+      <button class="ghost small" id="editMine" hidden>Edit my site</button>
+    </div>
+    <div id="list" class="grid"></div>
+  </section>
+
+  <!-- 5. results (organiser live, everyone after close) -->
+  <section id="vResults" hidden>
+    <h2 id="resultsTitle">Results</h2>
+    <p class="muted" id="resultsMeta"></p>
+    <div id="results" class="results"></div>
+  </section>
+
+  <!-- 6. organiser panel -->
+  <section id="vAdmin" hidden>
+    <h2>Organiser</h2>
+    <div class="row">
+      <button class="primary" id="toggleOpen"></button>
+      <button class="ghost" id="refreshResults">Refresh results</button>
+    </div>
+    <p class="muted">Closing the vote shows the results to everyone. Reopen anytime.</p>
+    <details><summary>Settings</summary>
+      <label>Title <input id="aTitle" maxlength="40"></label>
+      <label>Allowed email domain (empty = any Google account) <input id="aDomain"></label>
+      <label>Organiser emails (comma separated) <input id="aAdmins"></label>
+      <button class="ghost" id="aSave">Save settings</button>
+      <p class="error" id="aErr" hidden></p>
+    </details>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
