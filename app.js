@@ -149,7 +149,7 @@ $("list").onclick = async (e) => {
   const target = sites.find((s) => s.id === b.dataset.vote);
   if (!target) return;
   // in-page confirmation (no browser dialogs)
-  if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Confirm vote for #" + target.no; setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "Vote"; } }, 4000); return; }
+  if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Confirm vote for #" + target.no; setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "Vote"; } }, 8000); return; }
   b.disabled = true;
   try { await setDoc(doc(db, "votes", user.uid), { site: target.id, createdAt: serverTimestamp() }); toast("Voted for #" + target.no + " " + target.name); }
   catch (e2) { toast(friendly(e2)); b.disabled = false; b.textContent = "Vote"; }
@@ -168,7 +168,7 @@ function renderResults() {
 }
 $("results").onclick = async (e) => {
   const b = e.target.closest("[data-del]"); if (!b) return;
-  if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "really remove?"; setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "remove"; } }, 4000); return; }
+  if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "really remove?"; setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "remove"; } }, 8000); return; }
   try { await deleteDoc(doc(db, "sites", b.dataset.del)); toast("Removed."); } catch (e2) { toast(friendly(e2)); }
 };
 
