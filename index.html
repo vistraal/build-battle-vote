@@ -13,9 +13,18 @@
   <div class="wrap">
     <div class="brand"><span class="logo"></span><span id="title">Build Battle</span></div>
     <nav class="tabs" id="tabs" hidden>
-      <button class="tab" data-tab="gallery" id="tabGallery">Gallery</button>
-      <button class="tab" data-tab="mine" id="tabMine">My site</button>
-      <button class="tab" data-tab="admin" id="tabAdmin" hidden>Control</button>
+      <!-- student tabs -->
+      <button class="tab stu" data-tab="mine">My site</button>
+      <button class="tab stu" data-tab="gallery">Gallery</button>
+      <!-- organiser tabs -->
+      <button class="tab org" data-tab="subs">Submissions</button>
+      <button class="tab org" data-tab="gallery">Gallery</button>
+      <button class="tab org" data-tab="voting">Voting</button>
+      <button class="tab org" data-tab="control">Control</button>
+      <button class="tab org" data-tab="w1">1st</button>
+      <button class="tab org" data-tab="w2">2nd</button>
+      <button class="tab org" data-tab="w3">3rd</button>
+      <button class="tab org" data-tab="winners">Winners</button>
     </nav>
     <div class="me" id="me" hidden><span id="meName"></span><button class="link" id="signOut">Sign out</button></div>
   </div>
@@ -37,7 +46,7 @@
 
   <div class="banner" id="status" hidden></div>
 
-  <!-- MY SITE -->
+  <!-- STUDENT: MY SITE -->
   <section id="vMine" hidden>
     <div id="mineCard" hidden>
       <h2 class="h2tight">Your entry</h2>
@@ -57,7 +66,7 @@
     </div>
   </section>
 
-  <!-- GALLERY -->
+  <!-- GALLERY (students + organiser) -->
   <section id="vGallery" hidden>
     <div id="galleryLocked" class="locked" hidden>
       <div class="lockIcon"></div>
@@ -79,23 +88,72 @@
     </div>
   </section>
 
-  <!-- CONTROL (organiser) -->
-  <section id="vAdmin" hidden>
+  <!-- ORGANISER · SUBMISSIONS (projector) -->
+  <section id="vSubs" class="stage" hidden>
+    <div class="stage-big" id="subCount">0</div>
+    <div class="stage-label">sites submitted</div>
+    <div class="stage-timer" id="subTimer">—</div>
+    <div class="stage-foot" id="subFoot">buildbattle.sitesfare.app</div>
+  </section>
+
+  <!-- ORGANISER · VOTING (projector) -->
+  <section id="vVoting" class="stage" hidden>
+    <div class="stage-timer huge" id="voteTimer">—</div>
+    <div class="stage-label" id="voteLabel">voting</div>
+    <div class="stage-big small" id="voteCount">0</div>
+    <div class="stage-foot">hands raised</div>
+  </section>
+
+  <!-- ORGANISER · WINNER PAGES (projector) -->
+  <section id="vW1" class="stage win" hidden>
+    <canvas id="confetti"></canvas>
+    <div class="stage-eyebrow">Class choice</div>
+    <div class="stage-name" id="w1Name">—</div>
+    <div class="stage-meta" id="w1Meta"></div>
+  </section>
+  <section id="vW2" class="stage win" hidden>
+    <div class="stage-eyebrow">Second</div>
+    <div class="stage-name" id="w2Name">—</div>
+    <div class="stage-meta" id="w2Meta"></div>
+  </section>
+  <section id="vW3" class="stage win" hidden>
+    <div class="stage-eyebrow">Third</div>
+    <div class="stage-name" id="w3Name">—</div>
+    <div class="stage-meta" id="w3Meta"></div>
+  </section>
+  <section id="vWinners" class="stage" hidden>
+    <div class="stage-eyebrow">Winners</div>
+    <div class="podium" id="podium"></div>
+  </section>
+
+  <!-- ORGANISER · CONTROL -->
+  <section id="vControl" hidden>
     <div class="stats">
       <div class="stat"><div class="k" id="stSites">0</div><div class="l">sites in</div></div>
       <div class="stat"><div class="k" id="stVotes">0</div><div class="l">hands raised</div></div>
       <div class="stat"><div class="k" id="stPhase">—</div><div class="l">phase</div></div>
     </div>
-    <div class="bigbtns">
-      <button class="bigbtn start" id="phVote"><span class="bb-k">Start voting</span><span class="bb-s">Opens the gallery to everyone</span></button>
-      <button class="bigbtn close" id="phClosed"><span class="bb-k">Close &amp; reveal</span><span class="bb-s">Freezes the hands and shows the winner</span></button>
+
+    <div class="ctl">
+      <div class="ctl-h">1 · Submissions <span class="muted" id="ctlSubState"></span></div>
+      <div class="ctl-row">
+        <label class="inline">Timer <input id="subMin" type="number" min="1" max="180" value="45"> min</label>
+        <button class="primary" id="subStart">Start submission timer</button>
+        <button class="ghost" id="graceStart">+10 min grace</button>
+        <button class="ghost" id="subStop">Stop timer</button>
+      </div>
     </div>
-    <div class="row small-row">
-      <button class="ghost" id="showCounter">Live counter (projector)</button>
+
+    <div class="bigbtns">
+      <button class="bigbtn start" id="phVote"><span class="bb-k">Start voting</span><span class="bb-s" id="phVoteSub">Opens the gallery and starts the vote timer</span></button>
+      <button class="bigbtn close" id="phClosed"><span class="bb-k">Close &amp; reveal</span><span class="bb-s">Freezes the hands and opens the 1st page</span></button>
+    </div>
+    <div class="ctl-row tight">
+      <label class="inline">Vote timer <input id="voteMin" type="number" min="1" max="60" value="10"> min</label>
       <button class="ghost" id="phSubmit">← Back to submissions</button>
-      <button class="ghost" id="showReveal" hidden>Show winner screen again</button>
       <button class="ghost red" id="resetAll">Reset…</button>
     </div>
+
     <details class="sec" open><summary>Fastest submissions</summary><div id="fastest" class="results"></div></details>
     <details class="sec" open><summary>Live standings <span class="muted" id="adminMeta"></span></summary><div id="adminResults" class="results"></div></details>
     <details class="sec"><summary>Title</summary>
@@ -105,9 +163,9 @@
   </section>
 </main>
 
-<!-- Winner reveal -->
+<!-- Student winner card -->
 <div class="reveal" id="reveal" hidden>
-  <canvas id="confetti"></canvas>
+  <canvas id="confetti2"></canvas>
   <div class="reveal-card">
     <div class="reveal-eyebrow">Class choice</div>
     <div class="reveal-num" id="revealNum">#1</div>
@@ -119,23 +177,11 @@
   </div>
 </div>
 
-<!-- Live submission counter (projector) -->
-<div class="counter" id="counter" hidden>
-  <div class="counter-top"><span class="counter-title" id="counterTitle">Build Battle</span><button class="link" id="counterClose">Close</button></div>
-  <div class="counter-main">
-    <div class="counter-num" id="counterNum">0</div>
-    <div class="counter-label">sites submitted</div>
-    <div class="counter-sub" id="counterSub"></div>
-  </div>
-  <div class="counter-feed" id="counterFeed"></div>
-  <div class="counter-url">buildbattle.sitesfare.app</div>
-</div>
-
 <!-- Reset sheet -->
 <div class="sheet-bg" id="sheetBg" hidden>
   <div class="sheet" role="dialog" aria-modal="true">
     <div class="sheet-title">Reset for a new session?</div>
-    <p class="muted">This deletes <b id="sheetCounts"></b> and goes back to Submissions. It cannot be undone.</p>
+    <p class="muted">This deletes <b id="sheetCounts"></b>, clears the timers and goes back to Submissions. It cannot be undone.</p>
     <button class="sheet-btn red" id="sheetConfirm">Delete everything</button>
     <button class="sheet-btn" id="sheetCancel">Cancel</button>
   </div>

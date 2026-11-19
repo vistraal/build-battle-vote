@@ -9,44 +9,51 @@ service cloud.firestore {
     function email() { return request.auth.token.email.lower(); }
     function isAdmin() { return signedIn() && email() == organiser(); }
     function cfgExists() { return exists(/databases/$(database)/documents/config/settings); }
-    function phase() { return cfgExists() ? get(/databases/$(database)/documents/config/settings).data.phase : 'submit'; }
+    function cfg() { return get(/databases/$(database)/documents/config/settings).data; }
+    function phase() { return cfgExists() ? cfg().phase : 'submit'; }
+    // A timer field is "open" when it is absent, or when the deadline is still ahead.
+    function before(field) { return !(field in cfg()) || cfg()[field] == null || request.time < cfg()[field]; }
+    // Submissions: phase must be submit, and either the submission timer has not ended, or the grace period is running.
+    function submissionsOpen() {
+      return phase() == 'submit' && (before('submitEndsAt') || ('graceEndsAt' in cfg() && cfg().graceEndsAt != null && request.time < cfg().graceEndsAt));
+    }
+    function votingOpen() { return phase() == 'vote' && before('voteEndsAt'); }
     function validSite(d) {
       return d.name is string && d.name.size() >= 2 && d.name.size() <= 60
           && d.url is string && d.url.size() <= 200 && d.url.matches('https?://[^ ]{3,}')
           && d.keys().hasOnly(['name', 'url', 'createdAt']);
     }
 
-    // Settings: phase is "submit" (students add sites, gallery hidden), "vote" (gallery open, voting on) or "closed" (results for all).
+    // Settings: phase submit / vote / closed, plus the timers (timestamps or null).
     match /config/settings {
       allow read: if signedIn();
       allow create, update: if isAdmin()
           && request.resource.data.phase in ['submit', 'vote', 'closed']
-          && request.resource.data.keys().hasOnly(['phase', 'title', 'updatedAt']);
+          && request.resource.data.keys().hasOnly(['phase', 'title', 'updatedAt', 'submitEndsAt', 'graceEndsAt', 'voteEndsAt', 'submitMinutes', 'voteMinutes']);
       allow delete: if false;
     }
 
     // Each student owns exactly one site document, keyed by their uid.
     match /sites/{uid} {
-      // Students see only their own entry until voting starts; then everyone sees the gallery.
       allow read: if isAdmin() || (signedIn() && (request.auth.uid == uid || phase() != 'submit'));
-      allow create: if signedIn() && request.auth.uid == uid && phase() != 'closed'
+      allow create: if signedIn() && request.auth.uid == uid && submissionsOpen()
           && validSite(request.resource.data) && request.resource.data.createdAt == request.time;
-      allow update: if signedIn() && request.auth.uid == uid && phase() != 'closed'
+      allow update: if signedIn() && request.auth.uid == uid && submissionsOpen()
           && validSite(request.resource.data) && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isAdmin();
     }
 
-    // One vote per person (doc id = voter uid), create-only, never for yourself, only while voting is open.
+    // One hand per person (doc id = voter uid), create-only, entrants only, never for yourself, only while the vote timer runs.
     match /votes/{uid} {
       allow read: if isAdmin() || (signedIn() && (request.auth.uid == uid || phase() == 'closed'));
-      allow create: if signedIn() && request.auth.uid == uid && phase() == 'vote'
-          && exists(/databases/$(database)/documents/sites/$(request.auth.uid))   // only people who submitted a site may vote
+      allow create: if signedIn() && request.auth.uid == uid && votingOpen()
+          && exists(/databases/$(database)/documents/sites/$(request.auth.uid))
           && request.resource.data.keys().hasOnly(['site', 'createdAt'])
           && request.resource.data.site is string
           && request.resource.data.site != request.auth.uid
           && exists(/databases/$(database)/documents/sites/$(request.resource.data.site));
       allow update: if false;
-      allow delete: if isAdmin();   // organiser Reset
+      allow delete: if isAdmin();
     }
   }
 }
