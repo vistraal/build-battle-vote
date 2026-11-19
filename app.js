@@ -124,7 +124,7 @@ function render() {
   if (p === "closed" && lastPhase && lastPhase !== "closed" && (votes || !admin)) showReveal();
   lastPhase = p;
 
-  renderMine(); renderGallery(); if (admin) renderAdmin();
+  renderMine(); renderGallery(); if (admin) { renderAdmin(); renderCounter(); }
 }
 
 function renderMine() {
@@ -235,6 +235,20 @@ $("sheetConfirm").onclick = async () => {
   b.disabled = false; b.textContent = "Delete everything"; $("sheetBg").hidden = true;
 };
 $("showReveal").onclick = () => showReveal();
+
+// ---------- live submission counter (projector mode) ----------
+let counterLast = -1;
+$("showCounter").onclick = () => { $("counter").hidden = false; counterLast = -1; renderCounter(); };
+$("counterClose").onclick = () => ($("counter").hidden = true);
+function renderCounter() {
+  if ($("counter").hidden) return;
+  const n = sites.length, el = $("counterNum");
+  $("counterTitle").textContent = cfg?.title || "Build Battle";
+  if (n !== counterLast) { el.textContent = n; el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); counterLast = n; }
+  const p = phase();
+  $("counterSub").textContent = p === "submit" ? "Submissions open — add yours at the link below" : p === "vote" ? "Voting is open · " + (votes ? votes.length : 0) + " hands raised" : "Voting closed";
+  $("counterFeed").innerHTML = sites.slice(-6).reverse().map((s, i) => '<div class="feed-item' + (i === 0 ? " new" : "") + '"><b>#' + s.no + "</b> " + esc(s.name) + '<span class="muted">' + fmtTime(s.createdAt) + "</span></div>").join("");
+}
 
 // ---------- winner reveal + confetti ----------
 function showReveal() {

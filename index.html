@@ -91,6 +91,7 @@
       <button class="bigbtn close" id="phClosed"><span class="bb-k">Close &amp; reveal</span><span class="bb-s">Freezes the hands and shows the winner</span></button>
     </div>
     <div class="row small-row">
+      <button class="ghost" id="showCounter">Live counter (projector)</button>
       <button class="ghost" id="phSubmit">← Back to submissions</button>
       <button class="ghost" id="showReveal" hidden>Show winner screen again</button>
       <button class="ghost red" id="resetAll">Reset…</button>
@@ -116,6 +117,18 @@
     <div class="reveal-runners" id="revealRunners"></div>
     <button class="primary" id="revealClose">See all results</button>
   </div>
+</div>
+
+<!-- Live submission counter (projector) -->
+<div class="counter" id="counter" hidden>
+  <div class="counter-top"><span class="counter-title" id="counterTitle">Build Battle</span><button class="link" id="counterClose">Close</button></div>
+  <div class="counter-main">
+    <div class="counter-num" id="counterNum">0</div>
+    <div class="counter-label">sites submitted</div>
+    <div class="counter-sub" id="counterSub"></div>
+  </div>
+  <div class="counter-feed" id="counterFeed"></div>
+  <div class="counter-url">buildbattle.sitesfare.app</div>
 </div>
 
 <!-- Reset sheet -->
