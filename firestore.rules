@@ -44,7 +44,8 @@ service cloud.firestore {
                     && request.resource.data.site is string
                     && request.resource.data.site != request.auth.uid
                     && exists(/databases/$(database)/documents/sites/$(request.resource.data.site));
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isAdmin();   // organiser "Reset" between sessions
     }
   }
 }

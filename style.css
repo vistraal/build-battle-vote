@@ -60,3 +60,7 @@ details { background: var(--panel); border-radius: var(--radius); padding: 12px 
 summary { cursor: pointer; font-weight: 600; }
 .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 999px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.2); max-width: calc(100vw - 32px); text-align: center; z-index: 9; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.danger { margin-top: 18px; background: var(--panel); border-radius: var(--radius); padding: 14px 16px; display: flex; gap: 14px; align-items: center; justify-content: space-between; box-shadow: var(--shadow); border-left: 5px solid var(--red); }
+.danger .muted { margin-top: 2px; }
+.red { color: var(--red); }
+.red.armed { background: var(--red); color: #fff; }

@@ -22,7 +22,7 @@ if (!firebaseConfig.apiKey) { show("vSetup"); throw new Error("firebase-config.j
 
 // Firebase SDK (loaded only once the config exists, so an unconfigured deploy still shows the screen above)
 const FB = "https://www.gstatic.com/firebasejs/10.14.1/";
-const [{ initializeApp }, { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }, { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, serverTimestamp }] =
+const [{ initializeApp }, { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }, { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, getDocs, writeBatch, serverTimestamp }] =
   await Promise.all([import(FB + "firebase-app.js"), import(FB + "firebase-auth.js"), import(FB + "firebase-firestore.js")]);
 
 const app = initializeApp(firebaseConfig);
@@ -100,6 +100,7 @@ function route() {
   }
   if (!showResults && unsubVotes) { unsubVotes(); unsubVotes = null; votes = null; }
   renderGallery();
+  renderResults();
 }
 function sessionStorage_get(k) { try { return sessionStorage.getItem(k); } catch { return null; } }
 function sessionStorage_set(k, v) { try { sessionStorage.setItem(k, v); } catch {} }
@@ -117,10 +118,11 @@ $("rSave").onclick = async () => {
   if (!/^https?:\/\/[^\s]{3,}$/i.test(url)) return err("rErr", { message: "Paste the full link, starting with https://" });
   err("rErr", null); $("rSave").disabled = true;
   try {
+    const wasNew = !mine;
     const data = { name, url };
-    if (!mine) data.createdAt = serverTimestamp();
+    if (wasNew) data.createdAt = serverTimestamp();
     await setDoc(doc(db, "sites", user.uid), data, { merge: true });
-    toast(mine ? "Updated." : "Your site is in the gallery.");
+    toast(wasNew ? "Your site is in the gallery." : "Updated.");
     sessionStorage_set("skipRegister", "1");
   } catch (e) { err("rErr", e); }
   $("rSave").disabled = false;
@@ -175,6 +177,21 @@ $("results").onclick = async (e) => {
 // ---------- organiser ----------
 $("toggleOpen").onclick = async () => { try { await updateDoc(doc(db, "config", "settings"), { open: !cfg.open }); toast(cfg.open ? "Voting closed. Everyone sees results now." : "Voting reopened."); } catch (e) { toast(friendly(e)); } };
 $("refreshResults").onclick = () => renderResults();
+// Reset: wipe sites + votes (organiser only, rules enforce it), keep settings, reopen voting. Two taps within 8 s.
+$("resetAll").onclick = async () => {
+  const b = $("resetAll");
+  if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.classList.add("armed"); b.textContent = "Tap again to delete everything"; setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.classList.remove("armed"); b.textContent = "Reset…"; } }, 8000); return; }
+  b.disabled = true; b.textContent = "Resetting…";
+  try {
+    const [vs, ss] = await Promise.all([getDocs(collection(db, "votes")), getDocs(collection(db, "sites"))]);
+    const refs = [...vs.docs, ...ss.docs].map((d) => d.ref);
+    for (let i = 0; i < refs.length; i += 400) { const batch = writeBatch(db); refs.slice(i, i + 400).forEach((r) => batch.delete(r)); await batch.commit(); }
+    if (!cfg.open) await updateDoc(doc(db, "config", "settings"), { open: true });
+    try { sessionStorage.removeItem("skipRegister"); } catch {}
+    toast("Reset done: " + ss.size + " sites and " + vs.size + " votes removed. Voting is open.");
+  } catch (e) { toast(friendly(e)); }
+  b.disabled = false; b.dataset.armed = ""; b.classList.remove("armed"); b.textContent = "Reset…";
+};
 $("aSave").onclick = async () => {
   err("aErr", null);
   const admins = $("aAdmins").value.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);

@@ -31,6 +31,7 @@ A one-page voting site for a classroom build battle: every student adds their pu
 - Post the link in the class group. Students sign in → add their site (name + live URL) → open a few → Vote (tap twice: the button asks to confirm).
 - Your view has **Live results** and an **Organiser** panel: *Close voting* reveals the results to everyone; *remove* drops a site (test entries, duplicates).
 - Settings lets you add more organiser emails and change the domain.
+- **Reset…** (Organiser panel, tap twice) deletes every site and vote and reopens voting, so the same link works for the next batch. Settings and organisers are kept.
 
 ## Notes
 
