@@ -12,84 +12,105 @@
 <header class="top">
   <div class="wrap">
     <div class="brand"><span class="logo"></span><span id="title">Build Battle</span></div>
-    <div class="me" id="me" hidden><span id="meEmail"></span><button class="link" id="signOut">Sign out</button></div>
+    <nav class="tabs" id="tabs" hidden>
+      <button class="tab" data-tab="gallery" id="tabGallery">Gallery</button>
+      <button class="tab" data-tab="mine" id="tabMine">My site</button>
+      <button class="tab" data-tab="admin" id="tabAdmin" hidden>Organiser</button>
+    </nav>
+    <div class="me" id="me" hidden><span id="meName"></span><button class="link" id="signOut">Sign out</button></div>
   </div>
 </header>
 
 <main class="wrap" id="main">
 
-  <!-- 0. not configured yet -->
+  <!-- not configured -->
   <section id="vSetup" hidden>
     <h1>Almost ready</h1>
-    <p class="lead">This voting site is deployed but not connected to Firebase yet. The organiser pastes the Firebase config into <code>firebase-config.js</code> and redeploys. Nothing to do if you are a student — check back in a few minutes.</p>
+    <p class="lead">This voting site is deployed but not connected to Firebase yet. The organiser pastes the Firebase config into <code>firebase-config.js</code> and redeploys.</p>
   </section>
 
-  <!-- 1. sign in -->
+  <!-- sign in -->
   <section id="vSignIn" hidden>
-    <h1>Vote for the best site</h1>
-    <p class="lead">Sign in with Google to see the gallery. One vote per person, and never for your own site.</p>
+    <h1>Build Battle</h1>
+    <p class="lead">Add your published site, then vote once for the best one in the class. Sign in with any Google account.</p>
     <button class="primary big" id="signIn">Sign in with Google</button>
-    <p class="muted" id="domainNote" hidden></p>
     <p class="error" id="signInErr" hidden></p>
   </section>
 
-  <!-- 2. first run: becomes organiser -->
-  <section id="vFirstRun" hidden>
-    <h1>First run</h1>
-    <p class="lead">Nobody has set this vote up yet. The first person to continue becomes the organiser (can open and close voting, see live results, remove sites).</p>
-    <label>Title shown to students <input id="fTitle" value="Build Battle" maxlength="40"></label>
-    <label>Only allow this email domain (leave empty for any Google account) <input id="fDomain" placeholder="mits.ac.in"></label>
-    <button class="primary" id="fCreate">Continue as organiser</button>
-    <p class="error" id="fErr" hidden></p>
-  </section>
+  <!-- phase banner, shown on every signed-in view -->
+  <div class="banner" id="status" hidden></div>
 
-  <!-- 3. register my site -->
-  <section id="vRegister" hidden>
-    <h1>Add your site</h1>
-    <p class="lead">Put your published site in the gallery first. You can edit it later. Then vote for someone else.</p>
-    <label>Your name <input id="rName" maxlength="60" placeholder="Ravi Kumar"></label>
-    <label>Live URL <input id="rUrl" type="url" maxlength="200" placeholder="https://ravikumar.sitesfare.app"></label>
-    <div class="row">
-      <button class="primary" id="rSave">Save my site</button>
-      <button class="ghost" id="rSkip">I don't have a site, just vote</button>
+  <!-- MY SITE: register / edit -->
+  <section id="vMine" hidden>
+    <div id="mineCard" hidden>
+      <h2 class="h2tight">Your entry</h2>
+      <article class="card mine-card" id="mineView"></article>
+      <div class="row"><button class="ghost" id="editMine">Edit</button><button class="ghost" id="goGallery">Go to gallery →</button></div>
     </div>
-    <p class="error" id="rErr" hidden></p>
+    <div id="mineForm">
+      <h1 id="mineTitle">Add your site</h1>
+      <p class="lead" id="mineLead">Put your published site in the gallery. You can edit it any time before voting closes.</p>
+      <label>Your name <input id="rName" maxlength="60" placeholder="Ravi Kumar"></label>
+      <label>Live URL <input id="rUrl" type="url" maxlength="200" placeholder="https://ravikumar.sitesfare.app"></label>
+      <div class="row">
+        <button class="primary" id="rSave">Save my site</button>
+        <button class="ghost" id="rCancel" hidden>Cancel</button>
+        <button class="ghost" id="rSkip">I'm only voting</button>
+      </div>
+      <p class="error" id="rErr" hidden></p>
+    </div>
   </section>
 
-  <!-- 4. gallery + vote -->
+  <!-- GALLERY -->
   <section id="vGallery" hidden>
-    <div class="banner" id="status"></div>
-    <div class="toolbar">
-      <input id="q" type="search" placeholder="Search by number or name">
-      <button class="ghost small" id="editMine" hidden>Edit my site</button>
+    <div id="galleryLocked" class="locked" hidden>
+      <div class="lockIcon"></div>
+      <h2>Gallery opens when voting starts</h2>
+      <p class="muted">Until the organiser starts the vote, you only see your own entry. Add it under <b>My site</b> if you haven't.</p>
+      <p class="muted" id="lockCount"></p>
     </div>
-    <div id="list" class="grid"></div>
+    <div id="galleryOpen" hidden>
+      <div class="toolbar">
+        <input id="q" type="search" placeholder="Search by number or name">
+      </div>
+      <div id="list" class="grid"></div>
+    </div>
+    <div id="vResults" hidden>
+      <h2 id="resultsTitle">Results</h2>
+      <p class="muted" id="resultsMeta"></p>
+      <div id="results" class="results"></div>
+    </div>
   </section>
 
-  <!-- 5. results (organiser live, everyone after close) -->
-  <section id="vResults" hidden>
-    <h2 id="resultsTitle">Results</h2>
-    <p class="muted" id="resultsMeta"></p>
-    <div id="results" class="results"></div>
-  </section>
-
-  <!-- 6. organiser panel -->
+  <!-- ORGANISER -->
   <section id="vAdmin" hidden>
-    <h2>Organiser</h2>
-    <div class="row">
-      <button class="primary" id="toggleOpen"></button>
-      <button class="ghost" id="refreshResults">Refresh results</button>
+    <h2 class="h2tight">Organiser</h2>
+    <div class="stats">
+      <div class="stat"><div class="k" id="stSites">0</div><div class="l">sites submitted</div></div>
+      <div class="stat"><div class="k" id="stVotes">0</div><div class="l">votes cast</div></div>
+      <div class="stat"><div class="k" id="stPhase">—</div><div class="l">current phase</div></div>
     </div>
-    <p class="muted">Closing the vote shows the results to everyone. Reopen anytime.</p>
+    <div class="phases">
+      <button class="phase" id="phSubmit">1 · Submissions</button>
+      <button class="phase" id="phVote">2 · Start voting</button>
+      <button class="phase" id="phClosed">3 · Close &amp; reveal</button>
+    </div>
+    <p class="muted">Submissions: students add their sites, gallery hidden. Start voting: gallery opens, one vote each. Close: everyone sees the results.</p>
+
+    <h3>Fastest submissions</h3>
+    <div id="fastest" class="results"></div>
+
+    <h3>Live results</h3>
+    <p class="muted" id="adminMeta"></p>
+    <div id="adminResults" class="results"></div>
+
     <div class="danger">
-      <div><b>Reset for a new session</b><div class="muted">Deletes every site and every vote. Keeps you as organiser and reopens voting. Cannot be undone.</div></div>
+      <div><b>Reset for a new session</b><div class="muted">Deletes every site and every vote and goes back to Submissions. Cannot be undone.</div></div>
       <button class="ghost red" id="resetAll">Reset…</button>
     </div>
-    <details><summary>Settings</summary>
-      <label>Title <input id="aTitle" maxlength="40"></label>
-      <label>Allowed email domain (empty = any Google account) <input id="aDomain"></label>
-      <label>Organiser emails (comma separated) <input id="aAdmins"></label>
-      <button class="ghost" id="aSave">Save settings</button>
+    <details><summary>Title</summary>
+      <label>Title shown to students <input id="aTitle" maxlength="40"></label>
+      <button class="ghost" id="aSave">Save</button>
       <p class="error" id="aErr" hidden></p>
     </details>
   </section>

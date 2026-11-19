@@ -64,3 +64,26 @@ summary { cursor: pointer; font-weight: 600; }
 .danger .muted { margin-top: 2px; }
 .red { color: var(--red); }
 .red.armed { background: var(--red); color: #fff; }
+/* v2: tabs, phases, organiser */
+.top .wrap { gap: 10px; }
+.tabs { display: flex; gap: 4px; background: var(--panel2); border-radius: 999px; padding: 3px; }
+.tab { background: transparent; padding: 6px 14px; font-size: 13px; color: var(--grayt); }
+.tab.on { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.me span { font-weight: 600; color: var(--ink); }
+.h2tight { margin-top: 8px; }
+h3 { font-size: 17px; margin: 26px 0 8px; letter-spacing: -.01em; }
+.mine-card { max-width: 420px; }
+.locked { text-align: center; padding: 40px 16px 20px; }
+.lockIcon { width: 64px; height: 64px; border-radius: 18px; background: var(--panel2); margin: 0 auto 14px; position: relative; }
+.lockIcon::before { content: ""; position: absolute; left: 20px; top: 14px; width: 18px; height: 16px; border: 3px solid var(--grayt); border-bottom: 0; border-radius: 10px 10px 0 0; }
+.lockIcon::after { content: ""; position: absolute; left: 16px; top: 28px; width: 32px; height: 22px; background: var(--grayt); border-radius: 5px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 14px; }
+.stat { background: var(--panel); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow); }
+.stat .k { font-size: 30px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 12px; color: var(--gray); }
+.phases { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.phase { background: var(--panel); color: var(--grayt); box-shadow: var(--shadow); }
+.phase.on { background: var(--blue); color: #fff; }
+.count.time { font-size: 14px; font-weight: 600; color: var(--grayt); }
+.rrow a.muted { font-size: 12px; text-decoration: none; margin-left: 6px; }
+@media (max-width: 560px) { .tabs { order: 3; width: 100%; justify-content: center; } .top .wrap { flex-wrap: wrap; height: auto; padding-block: 8px; } .stats { grid-template-columns: 1fr 1fr 1fr; } .stat .k { font-size: 22px; } }

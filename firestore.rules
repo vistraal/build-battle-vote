@@ -2,50 +2,50 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // The one organiser. Change this email (and ORGANISER in app.js) to hand the app to someone else.
+    function organiser() { return 'contactpavankumarmeduri@gmail.com'; }
+
     function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
     function email() { return request.auth.token.email.lower(); }
+    function isAdmin() { return signedIn() && email() == organiser(); }
     function cfgExists() { return exists(/databases/$(database)/documents/config/settings); }
-    function cfg() { return get(/databases/$(database)/documents/config/settings).data; }
-    function isAdmin() { return signedIn() && cfgExists() && email() in cfg().admins; }
-    function domainOk() {
-      return cfgExists() && (cfg().allowedDomain == "" || email().matches('.*@' + cfg().allowedDomain.replace('\\.', '[.]') + '$'));
-    }
+    function phase() { return cfgExists() ? get(/databases/$(database)/documents/config/settings).data.phase : 'submit'; }
     function validSite(d) {
       return d.name is string && d.name.size() >= 2 && d.name.size() <= 60
           && d.url is string && d.url.size() <= 200 && d.url.matches('https?://[^ ]{3,}')
           && d.keys().hasOnly(['name', 'url', 'createdAt']);
     }
 
-    // One settings document. The first signed-in person creates it and becomes organiser.
+    // Settings: phase is "submit" (students add sites, gallery hidden), "vote" (gallery open, voting on) or "closed" (results for all).
     match /config/settings {
       allow read: if signedIn();
-      allow create: if signedIn() && !cfgExists()
-                    && request.resource.data.admins == [email()]
-                    && request.resource.data.keys().hasOnly(['admins', 'open', 'allowedDomain', 'title']);
-      allow update: if isAdmin() && email() in request.resource.data.admins;
+      allow create, update: if isAdmin()
+          && request.resource.data.phase in ['submit', 'vote', 'closed']
+          && request.resource.data.keys().hasOnly(['phase', 'title', 'updatedAt']);
       allow delete: if false;
     }
 
     // Each student owns exactly one site document, keyed by their uid.
     match /sites/{uid} {
-      allow read: if signedIn() && domainOk();
-      allow create: if signedIn() && domainOk() && request.auth.uid == uid && validSite(request.resource.data);
-      allow update: if signedIn() && domainOk() && request.auth.uid == uid && validSite(request.resource.data)
-                    && request.resource.data.createdAt == resource.data.createdAt;
+      // Students see only their own entry until voting starts; then everyone sees the gallery.
+      allow read: if isAdmin() || (signedIn() && (request.auth.uid == uid || phase() != 'submit'));
+      allow create: if signedIn() && request.auth.uid == uid && phase() != 'closed'
+          && validSite(request.resource.data) && request.resource.data.createdAt == request.time;
+      allow update: if signedIn() && request.auth.uid == uid && phase() != 'closed'
+          && validSite(request.resource.data) && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isAdmin();
     }
 
-    // One vote per person (doc id = voter uid), create-only, never for yourself, only while open.
+    // One vote per person (doc id = voter uid), create-only, never for yourself, only while voting is open.
     match /votes/{uid} {
-      allow read: if isAdmin() || (signedIn() && domainOk() && cfg().open == false);
-      allow create: if signedIn() && domainOk() && request.auth.uid == uid
-                    && cfg().open == true
-                    && request.resource.data.keys().hasOnly(['site', 'createdAt'])
-                    && request.resource.data.site is string
-                    && request.resource.data.site != request.auth.uid
-                    && exists(/databases/$(database)/documents/sites/$(request.resource.data.site));
+      allow read: if isAdmin() || (signedIn() && (request.auth.uid == uid || phase() == 'closed'));
+      allow create: if signedIn() && request.auth.uid == uid && phase() == 'vote'
+          && request.resource.data.keys().hasOnly(['site', 'createdAt'])
+          && request.resource.data.site is string
+          && request.resource.data.site != request.auth.uid
+          && exists(/databases/$(database)/documents/sites/$(request.resource.data.site));
       allow update: if false;
-      allow delete: if isAdmin();   // organiser "Reset" between sessions
+      allow delete: if isAdmin();   // organiser Reset
     }
   }
 }
