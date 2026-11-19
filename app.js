@@ -15,7 +15,7 @@ const friendly = (e) => {
   if (/permission-denied|insufficient/i.test(m)) return "Not allowed right now: the timer may be over, or this isn't open yet.";
   if (/popup-closed|cancelled-popup/i.test(m)) return "Sign-in window was closed. Try again.";
   if (/unauthorized-domain/i.test(m)) return "This domain is not authorised in Firebase yet.";
-  if (/already-exists/i.test(m)) return "You already raised your hand. One per person.";
+  if (/already-exists/i.test(m)) return "You already voted. One vote per person.";
   return e.message || m;
 };
 const thumb = (url) => "https://s0.wp.com/mshots/v1/" + encodeURIComponent(url) + "?w=320";
@@ -47,6 +47,8 @@ const now = () => Date.now();
 const subEnds = () => ms(cfg?.submitEndsAt), graceEnds = () => ms(cfg?.graceEndsAt), voteEnds = () => ms(cfg?.voteEndsAt);
 const submissionsOpen = () => phase() === "submit" && (!subEnds() || now() < subEnds() || (graceEnds() && now() < graceEnds()));
 const votingOpen = () => phase() === "vote" && (!voteEnds() || now() < voteEnds());
+const revealed = () => (Array.isArray(cfg?.revealed) ? cfg.revealed : []);
+const isRevealed = (r) => revealed().includes(r);
 
 // ---------- auth ----------
 $("signIn").onclick = async () => {
@@ -77,8 +79,8 @@ onAuthStateChanged(auth, async (u) => {
   tab = isAdmin() ? "control" : "mine";
 });
 
-const allViews = ["vSignIn", "vMine", "vGallery", "vSubs", "vVoting", "vControl", "vW1", "vW2", "vW3", "vWinners"];
-const tabView = { mine: "vMine", gallery: "vGallery", subs: "vSubs", voting: "vVoting", control: "vControl", w1: "vW1", w2: "vW2", w3: "vW3", winners: "vWinners" };
+const allViews = ["vSignIn", "vMine", "vGallery", "vSubs", "vVoting", "vControl", "vReveal"];
+const tabView = { mine: "vMine", gallery: "vGallery", subs: "vSubs", voting: "vVoting", control: "vControl", reveal: "vReveal" };
 
 function applyCfg() {
   $("title").textContent = cfg.title || "Build Battle";
@@ -119,24 +121,25 @@ function render() {
   const p = phase(), admin = isAdmin();
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab && !b.hidden));
   allViews.forEach((v) => ($(v).hidden = true)); $(tabView[tab] || "vGallery").hidden = false;
-  document.body.classList.toggle("stage-on", admin && ["subs", "voting", "w1", "w2", "w3", "winners"].includes(tab));
+  document.body.classList.toggle("stage-on", admin && ["subs", "voting", "reveal"].includes(tab));
 
   const st = $("status"); st.hidden = admin && tab !== "control" && tab !== "gallery";
   if (p === "submit") { st.className = "banner warn"; st.textContent = !submissionsOpen() ? "Submissions are closed. The gallery opens when voting starts." : mine ? "Submissions open. Your entry is in. The gallery opens when voting starts." : "Submissions open. Add your site under My site. The gallery opens when voting starts."; }
   else if (p === "vote") {
-    if (myVote) { const t = sites.find((s) => s.id === myVote); st.className = "banner ok"; st.textContent = "Your hand is up for #" + (t?.no ?? "?") + " " + (t?.name ?? "") + ". One hand per person."; }
-    else if (!votingOpen()) { st.className = "banner closed"; st.textContent = "Time's up. Hands are frozen; waiting for the reveal."; }
+    if (!votingOpen()) { st.className = "banner closed"; st.textContent = "Time's up. Votes are frozen; waiting for the organiser's reveal."; }
     else if (admin) { st.className = "banner"; st.textContent = "Voting is open. " + mmss(voteEnds() - now()) + " left."; }
-    else if (!mine) { st.className = "banner warn"; st.textContent = "Voting is open, but only entrants can raise a hand."; }
-    else { st.className = "banner"; st.textContent = "Voting is open. Open a few sites, then raise your hand once. Not for your own."; }
-  } else { st.className = "banner closed"; st.textContent = "Voting is closed. The class has chosen."; }
-
-  if (!admin && p === "closed" && lastPhase && lastPhase !== "closed") showReveal();
-  if (admin && p === "closed" && lastPhase && lastPhase !== "closed") { tab = "w1"; allViews.forEach((v) => ($(v).hidden = true)); $("vW1").hidden = false; document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === "w1")); }
+    else if (myVote) { const t = sites.find((s) => s.id === myVote); st.className = "banner ok"; st.textContent = "Your vote: #" + (t?.no ?? "?") + " " + (t?.name ?? "") + ". Tap another hand to change it until the timer ends."; }
+    else if (!mine) { st.className = "banner warn"; st.textContent = "Voting is open, but only entrants can vote."; }
+    else { st.className = "banner"; st.textContent = "Voting is open. Open a few sites, then tap the hand on your favourite. Not your own."; }
+  } else if (admin) { st.className = "banner closed"; st.textContent = "Voting is closed. Announce the winners from the Reveal tab."; }
+  else if (isRevealed(1)) { st.className = "banner closed"; st.textContent = "Voting is closed. The class has chosen."; }
+  else { st.className = "banner closed"; st.textContent = "Voting is closed. Waiting for the organiser to reveal the winners."; }
+  if (p !== "closed") shownRanks.clear();
   lastPhase = p;
 
   renderMine(); renderGallery();
   if (admin) { renderControl(); renderStages(); }
+  else if (p === "closed") checkMyPlace();
 }
 
 // ---------- student: my site ----------
@@ -146,7 +149,7 @@ function renderMine() {
   $("mineCard").hidden = showForm; $("mineForm").hidden = !showForm;
   $("rCancel").hidden = !mine;
   $("mineTitle").textContent = mine ? "Edit your site" : "Add your site";
-  $("mineLead").textContent = open ? "Your published site goes into the gallery. You need an entry to raise your hand later." : "Submissions are closed now.";
+  $("mineLead").textContent = open ? "Your published site goes into the gallery. You need an entry to vote later." : "Submissions are closed now.";
   $("rSave").disabled = !open;
   if (showForm && !$("rName").value && !$("rUrl").value) { $("rName").value = mine?.name || user.displayName || ""; $("rUrl").value = mine?.url || ""; }
   if (mine) $("mineView").innerHTML = rowHTML(mine, '<div class="muted">Submitted ' + fmtTime(mine.createdAt) + "</div>");
@@ -177,32 +180,40 @@ function renderGallery() {
   if ($("vGallery").hidden) return;
   const p = phase(), admin = isAdmin(), open = admin || p !== "submit";
   $("galleryLocked").hidden = open; $("galleryOpen").hidden = !open;
-  $("vResults").hidden = !(p === "closed" || (admin && votes));
+  $("vResults").hidden = !((p === "closed" && (admin || isRevealed(1))) || (admin && votes));
   if (!open) { $("lockCount").textContent = mine ? "Your entry: #" + mine.no + " " + mine.name : ""; return; }
   const q = $("q").value.trim().toLowerCase();
   const rows = sites.filter((s) => !q || String(s.no) === q.replace("#", "") || s.name.toLowerCase().includes(q));
   $("galleryCount").textContent = sites.length + " site" + (sites.length === 1 ? "" : "s");
-  const canRaise = votingOpen() && !myVote && !admin && !!mine;
+  const canVote = votingOpen() && !admin && !!mine;
   $("list").innerHTML = rows.length ? rows.map((s) => {
     const isMine = s.id === user.uid;
     let act = "";
     if (isMine) act = '<span class="tag">Your site</span>';
-    else if (myVote === s.id) act = '<span class="hand up">✋ Hand raised</span>';
-    else if (canRaise) act = '<button class="hand" data-vote="' + s.id + '">✋ Raise hand</button>';
-    else if (votingOpen() && !myVote && !admin && !mine) act = '<span class="tag">Entrants only</span>';
+    else if (canVote || (myVote === s.id && !admin)) act = '<button class="hand' + (myVote === s.id ? " up" : "") + '" data-vote="' + s.id + '"' + (canVote ? "" : " disabled") + '><span class="ico">✋</span>' + (myVote === s.id ? "Voted" : "Vote") + "</button>";
+    else if (votingOpen() && !admin && !mine) act = '<span class="tag">Entrants only</span>';
     return '<div class="row-item' + (isMine ? " mine" : "") + '">' + rowHTML(s) + '<div class="row-act">' + act + "</div></div>";
   }).join("") : '<p class="muted">No sites yet.</p>';
   if (!$("vResults").hidden) renderResultsInto("results", "resultsMeta", false);
   $("resultsTitle").textContent = p === "closed" ? "Results" : "Live standings";
   clearTimeout(thumbRetry); thumbRetry = setTimeout(() => document.querySelectorAll("#list .thumb img, #mineView .thumb img").forEach((i) => { i.src = i.src.split("&r=")[0] + "&r=" + Date.now(); }), 12000);
 }
+let voting = false;
 $("list").onclick = async (e) => {
-  const b = e.target.closest("[data-vote]"); if (!b) return;
-  const target = sites.find((s) => s.id === b.dataset.vote); if (!target) return;
-  if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.classList.add("armed"); b.textContent = "Confirm: #" + target.no + "?"; setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.classList.remove("armed"); b.textContent = "✋ Raise hand"; } }, 8000); return; }
-  b.disabled = true;
-  try { await setDoc(doc(db, "votes", user.uid), { site: target.id, createdAt: serverTimestamp() }); toast("Hand raised for #" + target.no + " " + target.name); }
-  catch (e2) { toast(friendly(e2)); b.disabled = false; b.classList.remove("armed"); b.dataset.armed = ""; b.textContent = "✋ Raise hand"; }
+  const b = e.target.closest("[data-vote]"); if (!b || b.disabled || voting) return;
+  const target = sites.find((s) => s.id === b.dataset.vote); if (!target || !votingOpen()) return;
+  const ref = doc(db, "votes", user.uid), prev = myVote;
+  // flip the colour straight away; the snapshot confirms it
+  document.querySelectorAll("#list .hand.up").forEach((x) => { x.classList.remove("up"); x.lastChild.textContent = "Vote"; });
+  const unvote = prev === target.id;
+  if (!unvote) { b.classList.add("up"); b.lastChild.textContent = "Voted"; }
+  voting = true;
+  try {
+    if (unvote) { await deleteDoc(ref); toast("Vote removed."); }
+    else if (prev) { await updateDoc(ref, { site: target.id }); toast("Vote moved to #" + target.no + " " + target.name); }
+    else { await setDoc(ref, { site: target.id, createdAt: serverTimestamp() }); toast("Voted for #" + target.no + " " + target.name); }
+  } catch (e2) { toast(friendly(e2)); }
+  voting = false; renderGallery();
 };
 
 function ranked() {
@@ -212,7 +223,7 @@ function ranked() {
 function renderResultsInto(listId, metaId, withRemove) {
   if (!votes) { $(listId).innerHTML = '<p class="muted">Results appear when voting closes.</p>'; return; }
   const rows = ranked(), max = Math.max(1, ...rows.map((r) => r.votes)), total = votes.length;
-  $(metaId).textContent = total + " hand" + (total === 1 ? "" : "s") + " · " + sites.length + " sites";
+  $(metaId).textContent = total + " vote" + (total === 1 ? "" : "s") + " · " + sites.length + " sites";
   $(listId).innerHTML = rows.length ? rows.map((r, i) => '<div class="rrow' + (i === 0 && r.votes > 0 ? " top" : "") + '"><div class="rank">' + (i + 1) + '</div><div><div><b>#' + r.no + "</b> " + esc(r.name) + (withRemove ? ' <button class="del" data-del="' + r.id + '">remove</button>' : "") + '</div><div class="bar"><i style="width:' + (100 * r.votes / max) + '%"></i></div></div><div class="count">' + r.votes + "</div></div>").join("") : '<p class="muted">No sites yet.</p>';
 }
 
@@ -235,15 +246,15 @@ const save = async (data, msg) => { try { await updateDoc(doc(db, "config", "set
 $("subStart").onclick = () => { const m = Math.max(1, +$("subMin").value || 45); save({ submitEndsAt: inMin(m), graceEndsAt: null, submitMinutes: m }, "Submission timer: " + m + " min."); };
 $("graceStart").onclick = () => save({ graceEndsAt: inMin(GRACE_MIN) }, "Grace period: " + GRACE_MIN + " more minutes.");
 $("subStop").onclick = () => save({ submitEndsAt: null, graceEndsAt: null }, "Timer cleared. Submissions open.");
-$("phVote").onclick = () => { const m = Math.max(1, +$("voteMin").value || 10); autoClosed = false; save({ phase: "vote", voteEndsAt: inMin(m), voteMinutes: m }, "Voting started: " + m + " min."); };
-$("phClosed").onclick = () => save({ phase: "closed" }, "Voting closed.");
-$("phSubmit").onclick = () => save({ phase: "submit", voteEndsAt: null }, "Back to submissions.");
+$("phVote").onclick = () => { const m = Math.max(1, +$("voteMin").value || 10); autoClosed = false; save({ phase: "vote", voteEndsAt: inMin(m), voteMinutes: m, revealed: [] }, "Voting started: " + m + " min."); };
+$("phClosed").onclick = () => save({ phase: "closed" }, "Voting closed. Announce from the Reveal tab.");
+$("phSubmit").onclick = () => save({ phase: "submit", voteEndsAt: null, revealed: [] }, "Back to submissions.");
 $("adminResults").onclick = async (e) => {
   const b = e.target.closest("[data-del]"); if (!b) return;
   if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "really remove?"; setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "remove"; } }, 8000); return; }
   try { await deleteDoc(doc(db, "sites", b.dataset.del)); toast("Removed."); } catch (e2) { toast(friendly(e2)); }
 };
-$("resetAll").onclick = () => { $("sheetCounts").textContent = sites.length + " site" + (sites.length === 1 ? "" : "s") + " and " + (votes ? votes.length : 0) + " hand" + ((votes ? votes.length : 0) === 1 ? "" : "s"); $("sheetBg").hidden = false; };
+$("resetAll").onclick = () => { $("sheetCounts").textContent = sites.length + " site" + (sites.length === 1 ? "" : "s") + " and " + (votes ? votes.length : 0) + " vote" + ((votes ? votes.length : 0) === 1 ? "" : "s"); $("sheetBg").hidden = false; };
 $("sheetCancel").onclick = () => ($("sheetBg").hidden = true);
 $("sheetBg").onclick = (e) => { if (e.target === $("sheetBg")) $("sheetBg").hidden = true; };
 $("sheetConfirm").onclick = async () => {
@@ -252,15 +263,15 @@ $("sheetConfirm").onclick = async () => {
     const [vs, ss] = await Promise.all([getDocs(collection(db, "votes")), getDocs(collection(db, "sites"))]);
     const refs = [...vs.docs, ...ss.docs].map((d) => d.ref);
     for (let i = 0; i < refs.length; i += 400) { const batch = writeBatch(db); refs.slice(i, i + 400).forEach((r) => batch.delete(r)); await batch.commit(); }
-    await updateDoc(doc(db, "config", "settings"), { phase: "submit", submitEndsAt: null, graceEndsAt: null, voteEndsAt: null, updatedAt: serverTimestamp() });
-    toast("Reset done: " + ss.size + " sites and " + vs.size + " hands removed.");
+    await updateDoc(doc(db, "config", "settings"), { phase: "submit", submitEndsAt: null, graceEndsAt: null, voteEndsAt: null, revealed: [], updatedAt: serverTimestamp() });
+    toast("Reset done: " + ss.size + " sites and " + vs.size + " votes removed.");
   } catch (e) { toast(friendly(e)); }
   b.disabled = false; b.textContent = "Delete everything"; $("sheetBg").hidden = true;
 };
 $("aSave").onclick = () => save({ title: $("aTitle").value.trim() || "Build Battle" }, "Saved.");
 
 // ---------- organiser: projector stages ----------
-let lastCount = -1, w1Conf = false;
+let lastCount = -1;
 function renderStages() {
   const p = phase();
   // Submissions
@@ -279,17 +290,51 @@ function renderStages() {
     const ve = voteEnds(), t = $("voteTimer");
     if (p !== "vote") { t.textContent = p === "closed" ? "closed" : "not yet"; t.className = "stage-timer huge over"; $("voteLabel").textContent = p === "closed" ? "voting is over" : "voting hasn't started"; }
     else if (!ve) { t.textContent = "open"; t.className = "stage-timer huge"; $("voteLabel").textContent = "voting"; }
-    else if (now() < ve) { t.textContent = mmss(ve - now()); t.className = "stage-timer huge" + (ve - now() < 60000 ? " urgent" : ""); $("voteLabel").textContent = "raise your hand"; }
+    else if (now() < ve) { t.textContent = mmss(ve - now()); t.className = "stage-timer huge" + (ve - now() < 60000 ? " urgent" : ""); $("voteLabel").textContent = "vote now"; }
     else { t.textContent = "00:00"; t.className = "stage-timer huge over"; $("voteLabel").textContent = "time's up"; }
     $("voteCount").textContent = votes ? votes.length : 0;
   }
-  // Winners
-  const rows = votes ? ranked() : [];
-  const fill = (i, nameId, metaId) => { const r = rows[i]; $(nameId).textContent = r ? r.name : "—"; $(metaId).textContent = r ? "#" + r.no + " · " + r.votes + " hand" + (r.votes === 1 ? "" : "s") : (votes ? "no entry" : "after the reveal"); };
-  fill(0, "w1Name", "w1Meta"); fill(1, "w2Name", "w2Meta"); fill(2, "w3Name", "w3Meta");
-  if (!$("vW1").hidden && rows.length && !w1Conf) { w1Conf = true; confetti($("confetti")); }
-  if ($("vW1").hidden && w1Conf) { w1Conf = false; stopConfetti(); }
-  if (!$("vWinners").hidden) $("podium").innerHTML = rows.slice(0, 10).map((r, i) => '<div class="pod' + (i < 3 ? " top" : "") + '"><span class="pr">' + (i + 1) + '</span><span class="pn">' + esc(r.name) + '</span><span class="pc">' + r.votes + "</span></div>").join("") || '<p class="muted">After the reveal.</p>';
+  // Reveal tab
+  if (!$("vReveal").hidden) {
+    const closed = p === "closed", rows = votes ? ranked() : [];
+    $("revealHint").textContent = closed ? (rows.length ? "Announce the winners" : "No entries") : "Close voting first";
+    document.querySelectorAll(".revbtn").forEach((b) => {
+      const r = +b.dataset.rank; b.disabled = !closed || !rows.length || (r > 0 && !rows[r - 1]);
+      b.classList.toggle("done", r > 0 && isRevealed(r));
+      if (r > 0) b.querySelector(".rb-s").textContent = isRevealed(r) ? (rows[r - 1]?.name || "") + " · announced" : rows[r - 1] ? "tap to announce" : "no entry";
+    });
+  }
+}
+// ---------- organiser: reveal ----------
+document.querySelectorAll(".revbtn").forEach((b) => (b.onclick = async () => {
+  const r = +b.dataset.rank, rows = ranked();
+  if (r > 0) { if (!isRevealed(r)) await save({ revealed: [...revealed(), r] }); openReveal(r, rows[r - 1], false); }
+  else openList(rows);
+}));
+const ord = { 1: "1st place", 2: "2nd place", 3: "3rd place" };
+function openReveal(r, w, forMe) {
+  if (!w) return;
+  $("rvEyebrow").textContent = forMe ? "You placed" : ord[r];
+  $("rvName").textContent = forMe ? ord[r].replace(" place", "") : w.name;
+  $("rvMeta").textContent = forMe ? w.name + " · " + w.votes + " vote" + (w.votes === 1 ? "" : "s") : "#" + w.no + " · " + w.votes + " vote" + (w.votes === 1 ? "" : "s");
+  $("rvName").hidden = false; $("rvMeta").hidden = false; $("rvPodium").hidden = true;
+  $("rvBack").textContent = forMe ? "← See results" : "← Back";
+  $("rv").hidden = false; confetti($("rvConfetti"), true);
+}
+function openList(rows) {
+  $("rvEyebrow").textContent = "Winners"; $("rvName").hidden = true; $("rvMeta").hidden = true;
+  $("rvPodium").hidden = false;
+  $("rvPodium").innerHTML = rows.slice(0, 10).map((r, i) => '<div class="pod' + (i < 3 ? " top" : "") + '"><span class="pr">' + (i + 1) + '</span><span class="pn">' + esc(r.name) + '</span><span class="pc">' + r.votes + "</span></div>").join("") || '<p class="muted">No entries.</p>';
+  $("rvBack").textContent = "← Back";
+  $("rv").hidden = false; confetti($("rvConfetti"), true);
+}
+$("rvBack").onclick = () => { $("rv").hidden = true; stopConfetti(); if (!isAdmin()) { tab = "gallery"; render(); } };
+// ---------- student: "you placed" ----------
+const shownRanks = new Set();
+function checkMyPlace() {
+  if (!votes || !mine) return;
+  const rows = ranked();
+  for (const r of [1, 2, 3]) { if (isRevealed(r) && rows[r - 1]?.id === user.uid && !shownRanks.has(r)) { shownRanks.add(r); openReveal(r, rows[r - 1], true); return; } }
 }
 // tick every second for timers; auto-close the vote when its timer ends (organiser only)
 setInterval(() => {
@@ -301,31 +346,19 @@ setInterval(() => {
   } else if (phase() !== "closed") { renderGallery(); renderMine(); const st = $("status"); if (!st.hidden) render(); }
 }, 1000);
 
-// ---------- student winner card ----------
-function showReveal() {
-  const rows = ranked(); if (!rows.length) return;
-  const w = rows[0];
-  $("revealNum").textContent = "#" + w.no; $("revealName").textContent = w.name;
-  $("revealUrl").textContent = w.url.replace(/^https?:\/\//, "") + " ↗"; $("revealUrl").href = w.url;
-  $("revealVotes").textContent = w.votes + " hand" + (w.votes === 1 ? "" : "s");
-  $("revealRunners").innerHTML = rows.slice(1, 3).map((r, i) => '<span><b>' + (i + 2) + "</b> #" + r.no + " " + esc(r.name) + " · " + r.votes + "</span>").join("");
-  $("reveal").hidden = false; confetti($("confetti2"));
-}
-$("revealClose").onclick = () => { $("reveal").hidden = true; stopConfetti(); tab = "gallery"; render(); };
-
 // ---------- confetti ----------
 let confettiRaf = 0;
 function stopConfetti() { cancelAnimationFrame(confettiRaf); confettiRaf = 0; }
-function confetti(c) {
+function confetti(c, loop) {
   const ctx = c.getContext("2d"); let W = c.width = c.clientWidth || innerWidth, H = c.height = c.clientHeight || innerHeight;
   const colors = ["#0066CC", "#0A84FF", "#FF9F0A", "#FF375F", "#30D158", "#BF5AF2", "#FFD60A"];
   const ps = Array.from({ length: 220 }, () => ({ x: Math.random() * W, y: -20 - Math.random() * H * 0.6, w: 6 + Math.random() * 8, h: 8 + Math.random() * 10, c: colors[(Math.random() * colors.length) | 0], vy: 2 + Math.random() * 3.5, vx: -1.2 + Math.random() * 2.4, r: Math.random() * Math.PI, vr: -0.12 + Math.random() * 0.24 }));
   const t0 = performance.now(); stopConfetti();
   const step = (t) => {
     ctx.clearRect(0, 0, W, H);
-    ps.forEach((p) => { p.x += p.vx + Math.sin((t + p.y) / 300) * 0.6; p.y += p.vy; p.r += p.vr; if (p.y > H + 20 && t - t0 < 6000) { p.y = -20; p.x = Math.random() * W; }
+    ps.forEach((p) => { p.x += p.vx + Math.sin((t + p.y) / 300) * 0.6; p.y += p.vy; p.r += p.vr; if (p.y > H + 20 && (loop || t - t0 < 6000)) { p.y = -20; p.x = Math.random() * W; }
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore(); });
-    if (t - t0 < 9000) confettiRaf = requestAnimationFrame(step); else { ctx.clearRect(0, 0, W, H); confettiRaf = 0; }
+    if (loop || t - t0 < 9000) confettiRaf = requestAnimationFrame(step); else { ctx.clearRect(0, 0, W, H); confettiRaf = 0; }
   };
   confettiRaf = requestAnimationFrame(step);
 }

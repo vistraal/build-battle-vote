@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Build Battle · Vote</title>
-<meta name="description" content="Raise your hand for the best student portfolio site. One hand per person, never for yourself.">
+<meta name="description" content="Vote for the best student portfolio site. One vote per person, never for yourself.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230066CC'/%3E%3Cpath d='M18 34l10 10 18-22' stroke='%23fff' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -21,10 +21,7 @@
       <button class="tab org" data-tab="gallery">Gallery</button>
       <button class="tab org" data-tab="voting">Voting</button>
       <button class="tab org" data-tab="control">Control</button>
-      <button class="tab org" data-tab="w1">1st</button>
-      <button class="tab org" data-tab="w2">2nd</button>
-      <button class="tab org" data-tab="w3">3rd</button>
-      <button class="tab org" data-tab="winners">Winners</button>
+      <button class="tab org" data-tab="reveal">Reveal</button>
     </nav>
     <div class="me" id="me" hidden><span id="meName"></span><button class="link" id="signOut">Sign out</button></div>
   </div>
@@ -39,7 +36,7 @@
 
   <section id="vSignIn" hidden>
     <h1>Build Battle</h1>
-    <p class="lead">Add your published site. When voting opens, raise your hand for the best one in the class. One hand per person.</p>
+    <p class="lead">Add your published site. When voting opens, vote for the best one in the class. One vote per person, and you can change it until the timer ends.</p>
     <button class="primary big" id="signIn">Sign in with Google</button>
     <p class="error" id="signInErr" hidden></p>
   </section>
@@ -55,7 +52,7 @@
     </div>
     <div id="mineForm">
       <h1 id="mineTitle">Add your site</h1>
-      <p class="lead" id="mineLead">Your published site goes into the gallery. You need an entry to raise your hand later.</p>
+      <p class="lead" id="mineLead">Your published site goes into the gallery. You need an entry to vote later.</p>
       <label>Your name <input id="rName" maxlength="60" placeholder="Ravi Kumar"></label>
       <label>Live URL <input id="rUrl" type="url" maxlength="200" placeholder="https://ravikumar.sitesfare.app"></label>
       <div class="row">
@@ -101,36 +98,25 @@
     <div class="stage-timer huge" id="voteTimer">—</div>
     <div class="stage-label" id="voteLabel">voting</div>
     <div class="stage-big small" id="voteCount">0</div>
-    <div class="stage-foot">hands raised</div>
+    <div class="stage-foot">votes</div>
   </section>
 
-  <!-- ORGANISER · WINNER PAGES (projector) -->
-  <section id="vW1" class="stage win" hidden>
-    <canvas id="confetti"></canvas>
-    <div class="stage-eyebrow">Class choice</div>
-    <div class="stage-name" id="w1Name">—</div>
-    <div class="stage-meta" id="w1Meta"></div>
-  </section>
-  <section id="vW2" class="stage win" hidden>
-    <div class="stage-eyebrow">Second</div>
-    <div class="stage-name" id="w2Name">—</div>
-    <div class="stage-meta" id="w2Meta"></div>
-  </section>
-  <section id="vW3" class="stage win" hidden>
-    <div class="stage-eyebrow">Third</div>
-    <div class="stage-name" id="w3Name">—</div>
-    <div class="stage-meta" id="w3Meta"></div>
-  </section>
-  <section id="vWinners" class="stage" hidden>
-    <div class="stage-eyebrow">Winners</div>
-    <div class="podium" id="podium"></div>
+  <!-- ORGANISER · REVEAL (projector) -->
+  <section id="vReveal" class="stage" hidden>
+    <div class="stage-eyebrow" id="revealHint">Reveal</div>
+    <div class="revbtns">
+      <button class="revbtn" data-rank="3"><span class="rb-k">Reveal 3rd</span><span class="rb-s"></span></button>
+      <button class="revbtn" data-rank="2"><span class="rb-k">Reveal 2nd</span><span class="rb-s"></span></button>
+      <button class="revbtn" data-rank="1"><span class="rb-k">Reveal 1st</span><span class="rb-s"></span></button>
+      <button class="revbtn list" data-rank="0"><span class="rb-k">Winners list</span><span class="rb-s">top 10</span></button>
+    </div>
   </section>
 
   <!-- ORGANISER · CONTROL -->
   <section id="vControl" hidden>
     <div class="stats">
       <div class="stat"><div class="k" id="stSites">0</div><div class="l">sites in</div></div>
-      <div class="stat"><div class="k" id="stVotes">0</div><div class="l">hands raised</div></div>
+      <div class="stat"><div class="k" id="stVotes">0</div><div class="l">votes</div></div>
       <div class="stat"><div class="k" id="stPhase">—</div><div class="l">phase</div></div>
     </div>
 
@@ -146,7 +132,7 @@
 
     <div class="bigbtns">
       <button class="bigbtn start" id="phVote"><span class="bb-k">Start voting</span><span class="bb-s" id="phVoteSub">Opens the gallery and starts the vote timer</span></button>
-      <button class="bigbtn close" id="phClosed"><span class="bb-k">Close &amp; reveal</span><span class="bb-s">Freezes the hands and opens the 1st page</span></button>
+      <button class="bigbtn close" id="phClosed"><span class="bb-k">Close voting</span><span class="bb-s">Freezes the votes. Announce from the Reveal tab.</span></button>
     </div>
     <div class="ctl-row tight">
       <label class="inline">Vote timer <input id="voteMin" type="number" min="1" max="60" value="10"> min</label>
@@ -163,17 +149,15 @@
   </section>
 </main>
 
-<!-- Student winner card -->
-<div class="reveal" id="reveal" hidden>
-  <canvas id="confetti2"></canvas>
-  <div class="reveal-card">
-    <div class="reveal-eyebrow">Class choice</div>
-    <div class="reveal-num" id="revealNum">#1</div>
-    <div class="reveal-name" id="revealName"></div>
-    <a class="reveal-url" id="revealUrl" target="_blank" rel="noopener"></a>
-    <div class="reveal-votes" id="revealVotes"></div>
-    <div class="reveal-runners" id="revealRunners"></div>
-    <button class="primary" id="revealClose">See all results</button>
+<!-- Full-screen winner reveal (organiser projector + student "you placed") -->
+<div class="rv" id="rv" hidden>
+  <canvas id="rvConfetti"></canvas>
+  <button class="rv-back" id="rvBack">← Back</button>
+  <div class="rv-card">
+    <div class="rv-eyebrow" id="rvEyebrow">1st place</div>
+    <div class="rv-name" id="rvName"></div>
+    <div class="rv-meta" id="rvMeta"></div>
+    <div class="podium" id="rvPodium" hidden></div>
   </div>
 </div>
 
@@ -181,7 +165,7 @@
 <div class="sheet-bg" id="sheetBg" hidden>
   <div class="sheet" role="dialog" aria-modal="true">
     <div class="sheet-title">Reset for a new session?</div>
-    <p class="muted">This deletes <b id="sheetCounts"></b>, clears the timers and goes back to Submissions. It cannot be undone.</p>
+    <p class="muted">This deletes <b id="sheetCounts"></b>, clears the timers and reveals, and goes back to Submissions. It cannot be undone.</p>
     <button class="sheet-btn red" id="sheetConfirm">Delete everything</button>
     <button class="sheet-btn" id="sheetCancel">Cancel</button>
   </div>

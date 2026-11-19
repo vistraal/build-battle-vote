@@ -29,7 +29,7 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create, update: if isAdmin()
           && request.resource.data.phase in ['submit', 'vote', 'closed']
-          && request.resource.data.keys().hasOnly(['phase', 'title', 'updatedAt', 'submitEndsAt', 'graceEndsAt', 'voteEndsAt', 'submitMinutes', 'voteMinutes']);
+          && request.resource.data.keys().hasOnly(['phase', 'title', 'updatedAt', 'submitEndsAt', 'graceEndsAt', 'voteEndsAt', 'submitMinutes', 'voteMinutes', 'revealed']);
       allow delete: if false;
     }
 
@@ -43,17 +43,21 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // One hand per person (doc id = voter uid), create-only, entrants only, never for yourself, only while the vote timer runs.
+    // One vote per person (doc id = voter uid). Entrants only, never for yourself, only while the vote timer runs.
+    // The vote can be moved or withdrawn as often as the voter likes until the timer ends.
+    function validVote(d) {
+      return d.keys().hasOnly(['site', 'createdAt']) && d.site is string && d.site != request.auth.uid
+          && exists(/databases/$(database)/documents/sites/$(d.site));
+    }
+    function canVote() {
+      return signedIn() && votingOpen() && exists(/databases/$(database)/documents/sites/$(request.auth.uid));
+    }
     match /votes/{uid} {
       allow read: if isAdmin() || (signedIn() && (request.auth.uid == uid || phase() == 'closed'));
-      allow create: if signedIn() && request.auth.uid == uid && votingOpen()
-          && exists(/databases/$(database)/documents/sites/$(request.auth.uid))
-          && request.resource.data.keys().hasOnly(['site', 'createdAt'])
-          && request.resource.data.site is string
-          && request.resource.data.site != request.auth.uid
-          && exists(/databases/$(database)/documents/sites/$(request.resource.data.site));
-      allow update: if false;
-      allow delete: if isAdmin();
+      allow create: if canVote() && request.auth.uid == uid && validVote(request.resource.data);
+      allow update: if canVote() && request.auth.uid == uid && validVote(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin() || (canVote() && request.auth.uid == uid);
     }
   }
 }

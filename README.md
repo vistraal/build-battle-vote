@@ -39,12 +39,11 @@ A one-page voting site for a classroom build battle: every student adds their pu
 - Site numbers are the order students registered; votes are stored against the student, so removing a site never shifts anyone's vote.
 - No server, no build step, no secrets: the Firebase config is public by design; the rules file is the security.
 
-## Organiser flow (v4)
+## Organiser flow
 
-Tabs for the organiser only: **Submissions · Gallery · Voting · Control · 1st · 2nd · 3rd · Winners**. Every tab except Control is a projector screen with 3–4 large elements.
+Organiser tabs: **Submissions · Gallery · Voting · Control · Reveal**. Everything but Control is a projector screen with 3–4 large elements.
 
-1. **Control → Start submission timer** (default 45 min). The **Submissions** tab shows the live count, the countdown and the app URL. When the timer ends no more submissions are accepted (enforced in `firestore.rules`).
-2. **+10 min grace** — optional, whenever you like. Submissions reopen for 10 minutes.
-3. **Start voting** (default 10 min). The gallery opens for students; the **Voting** tab shows the countdown and hands raised. When it ends, voting stops and the app closes the vote and jumps to the **1st** page with confetti.
-4. **2nd**, **3rd** and **Winners** (top 10) are the other reveal pages. **Close & reveal** ends the vote early.
-5. **Reset…** deletes every site and hand, clears the timers and returns to Submissions.
+1. **Control → Start submission timer** (default 45 min). The **Submissions** tab shows the live count and countdown. When it ends, no more submissions (enforced in `firestore.rules`). **+10 min grace** reopens them for 10 minutes, whenever you like.
+2. **Start voting** (default 10 min). The gallery opens; students tap the ✋ on their favourite and can move or withdraw the vote until the timer ends. The **Voting** tab shows the countdown and vote count. When it ends, voting stops — nothing is announced yet.
+3. **Reveal** tab: **Reveal 3rd**, **Reveal 2nd**, **Reveal 1st** each open a full-screen name with confetti (Back returns). Only once a place is announced does that student's phone show "You placed …"; results appear to everyone after 1st is announced. **Winners list** shows the top 10.
+4. **Reset…** deletes every site and vote, clears timers and reveals, and returns to Submissions.
