@@ -38,3 +38,13 @@ A one-page voting site for a classroom build battle: every student adds their pu
 - Without an allowed domain, "one vote per person" means one vote per Google account. Set the college domain if you want it watertight.
 - Site numbers are the order students registered; votes are stored against the student, so removing a site never shifts anyone's vote.
 - No server, no build step, no secrets: the Firebase config is public by design; the rules file is the security.
+
+## Organiser flow (v4)
+
+Tabs for the organiser only: **Submissions · Gallery · Voting · Control · 1st · 2nd · 3rd · Winners**. Every tab except Control is a projector screen with 3–4 large elements.
+
+1. **Control → Start submission timer** (default 45 min). The **Submissions** tab shows the live count, the countdown and the app URL. When the timer ends no more submissions are accepted (enforced in `firestore.rules`).
+2. **+10 min grace** — optional, whenever you like. Submissions reopen for 10 minutes.
+3. **Start voting** (default 10 min). The gallery opens for students; the **Voting** tab shows the countdown and hands raised. When it ends, voting stops and the app closes the vote and jumps to the **1st** page with confetti.
+4. **2nd**, **3rd** and **Winners** (top 10) are the other reveal pages. **Close & reveal** ends the vote early.
+5. **Reset…** deletes every site and hand, clears the timers and returns to Submissions.
