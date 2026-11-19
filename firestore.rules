@@ -40,6 +40,7 @@ service cloud.firestore {
     match /votes/{uid} {
       allow read: if isAdmin() || (signedIn() && (request.auth.uid == uid || phase() == 'closed'));
       allow create: if signedIn() && request.auth.uid == uid && phase() == 'vote'
+          && exists(/databases/$(database)/documents/sites/$(request.auth.uid))   // only people who submitted a site may vote
           && request.resource.data.keys().hasOnly(['site', 'createdAt'])
           && request.resource.data.site is string
           && request.resource.data.site != request.auth.uid

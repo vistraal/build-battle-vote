@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Build Battle · Vote</title>
-<meta name="description" content="Vote for the best student portfolio site. One vote per person, never for yourself.">
+<meta name="description" content="Raise your hand for the best student portfolio site. One hand per person, never for yourself.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230066CC'/%3E%3Cpath d='M18 34l10 10 18-22' stroke='%23fff' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -15,7 +15,7 @@
     <nav class="tabs" id="tabs" hidden>
       <button class="tab" data-tab="gallery" id="tabGallery">Gallery</button>
       <button class="tab" data-tab="mine" id="tabMine">My site</button>
-      <button class="tab" data-tab="admin" id="tabAdmin" hidden>Organiser</button>
+      <button class="tab" data-tab="admin" id="tabAdmin" hidden>Control</button>
     </nav>
     <div class="me" id="me" hidden><span id="meName"></span><button class="link" id="signOut">Sign out</button></div>
   </div>
@@ -23,39 +23,35 @@
 
 <main class="wrap" id="main">
 
-  <!-- not configured -->
   <section id="vSetup" hidden>
     <h1>Almost ready</h1>
-    <p class="lead">This voting site is deployed but not connected to Firebase yet. The organiser pastes the Firebase config into <code>firebase-config.js</code> and redeploys.</p>
+    <p class="lead">Deployed, but <code>firebase-config.js</code> is empty.</p>
   </section>
 
-  <!-- sign in -->
   <section id="vSignIn" hidden>
     <h1>Build Battle</h1>
-    <p class="lead">Add your published site, then vote once for the best one in the class. Sign in with any Google account.</p>
+    <p class="lead">Add your published site. When voting opens, raise your hand for the best one in the class. One hand per person.</p>
     <button class="primary big" id="signIn">Sign in with Google</button>
     <p class="error" id="signInErr" hidden></p>
   </section>
 
-  <!-- phase banner, shown on every signed-in view -->
   <div class="banner" id="status" hidden></div>
 
-  <!-- MY SITE: register / edit -->
+  <!-- MY SITE -->
   <section id="vMine" hidden>
     <div id="mineCard" hidden>
       <h2 class="h2tight">Your entry</h2>
-      <article class="card mine-card" id="mineView"></article>
+      <div class="row-item mine-row" id="mineView"></div>
       <div class="row"><button class="ghost" id="editMine">Edit</button><button class="ghost" id="goGallery">Go to gallery →</button></div>
     </div>
     <div id="mineForm">
       <h1 id="mineTitle">Add your site</h1>
-      <p class="lead" id="mineLead">Put your published site in the gallery. You can edit it any time before voting closes.</p>
+      <p class="lead" id="mineLead">Your published site goes into the gallery. You need an entry to raise your hand later.</p>
       <label>Your name <input id="rName" maxlength="60" placeholder="Ravi Kumar"></label>
       <label>Live URL <input id="rUrl" type="url" maxlength="200" placeholder="https://ravikumar.sitesfare.app"></label>
       <div class="row">
         <button class="primary" id="rSave">Save my site</button>
         <button class="ghost" id="rCancel" hidden>Cancel</button>
-        <button class="ghost" id="rSkip">I'm only voting</button>
       </div>
       <p class="error" id="rErr" hidden></p>
     </div>
@@ -66,14 +62,15 @@
     <div id="galleryLocked" class="locked" hidden>
       <div class="lockIcon"></div>
       <h2>Gallery opens when voting starts</h2>
-      <p class="muted">Until the organiser starts the vote, you only see your own entry. Add it under <b>My site</b> if you haven't.</p>
+      <p class="muted">Until then, only your own entry is visible. Add it under <b>My site</b>.</p>
       <p class="muted" id="lockCount"></p>
     </div>
     <div id="galleryOpen" hidden>
       <div class="toolbar">
         <input id="q" type="search" placeholder="Search by number or name">
+        <span class="muted" id="galleryCount"></span>
       </div>
-      <div id="list" class="grid"></div>
+      <div id="list" class="rows"></div>
     </div>
     <div id="vResults" hidden>
       <h2 id="resultsTitle">Results</h2>
@@ -82,40 +79,54 @@
     </div>
   </section>
 
-  <!-- ORGANISER -->
+  <!-- CONTROL (organiser) -->
   <section id="vAdmin" hidden>
-    <h2 class="h2tight">Organiser</h2>
     <div class="stats">
-      <div class="stat"><div class="k" id="stSites">0</div><div class="l">sites submitted</div></div>
-      <div class="stat"><div class="k" id="stVotes">0</div><div class="l">votes cast</div></div>
-      <div class="stat"><div class="k" id="stPhase">—</div><div class="l">current phase</div></div>
+      <div class="stat"><div class="k" id="stSites">0</div><div class="l">sites in</div></div>
+      <div class="stat"><div class="k" id="stVotes">0</div><div class="l">hands raised</div></div>
+      <div class="stat"><div class="k" id="stPhase">—</div><div class="l">phase</div></div>
     </div>
-    <div class="phases">
-      <button class="phase" id="phSubmit">1 · Submissions</button>
-      <button class="phase" id="phVote">2 · Start voting</button>
-      <button class="phase" id="phClosed">3 · Close &amp; reveal</button>
+    <div class="bigbtns">
+      <button class="bigbtn start" id="phVote"><span class="bb-k">Start voting</span><span class="bb-s">Opens the gallery to everyone</span></button>
+      <button class="bigbtn close" id="phClosed"><span class="bb-k">Close &amp; reveal</span><span class="bb-s">Freezes the hands and shows the winner</span></button>
     </div>
-    <p class="muted">Submissions: students add their sites, gallery hidden. Start voting: gallery opens, one vote each. Close: everyone sees the results.</p>
-
-    <h3>Fastest submissions</h3>
-    <div id="fastest" class="results"></div>
-
-    <h3>Live results</h3>
-    <p class="muted" id="adminMeta"></p>
-    <div id="adminResults" class="results"></div>
-
-    <div class="danger">
-      <div><b>Reset for a new session</b><div class="muted">Deletes every site and every vote and goes back to Submissions. Cannot be undone.</div></div>
+    <div class="row small-row">
+      <button class="ghost" id="phSubmit">← Back to submissions</button>
+      <button class="ghost" id="showReveal" hidden>Show winner screen again</button>
       <button class="ghost red" id="resetAll">Reset…</button>
     </div>
-    <details><summary>Title</summary>
-      <label>Title shown to students <input id="aTitle" maxlength="40"></label>
-      <button class="ghost" id="aSave">Save</button>
-      <p class="error" id="aErr" hidden></p>
+    <details class="sec" open><summary>Fastest submissions</summary><div id="fastest" class="results"></div></details>
+    <details class="sec" open><summary>Live standings <span class="muted" id="adminMeta"></span></summary><div id="adminResults" class="results"></div></details>
+    <details class="sec"><summary>Title</summary>
+      <label>Shown to students <input id="aTitle" maxlength="40"></label>
+      <button class="ghost" id="aSave">Save</button><p class="error" id="aErr" hidden></p>
     </details>
   </section>
-
 </main>
+
+<!-- Winner reveal -->
+<div class="reveal" id="reveal" hidden>
+  <canvas id="confetti"></canvas>
+  <div class="reveal-card">
+    <div class="reveal-eyebrow">Class choice</div>
+    <div class="reveal-num" id="revealNum">#1</div>
+    <div class="reveal-name" id="revealName"></div>
+    <a class="reveal-url" id="revealUrl" target="_blank" rel="noopener"></a>
+    <div class="reveal-votes" id="revealVotes"></div>
+    <div class="reveal-runners" id="revealRunners"></div>
+    <button class="primary" id="revealClose">See all results</button>
+  </div>
+</div>
+
+<!-- Reset sheet -->
+<div class="sheet-bg" id="sheetBg" hidden>
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-title">Reset for a new session?</div>
+    <p class="muted">This deletes <b id="sheetCounts"></b> and goes back to Submissions. It cannot be undone.</p>
+    <button class="sheet-btn red" id="sheetConfirm">Delete everything</button>
+    <button class="sheet-btn" id="sheetCancel">Cancel</button>
+  </div>
+</div>
 
 <div class="toast" id="toast" hidden></div>
 <script type="module" src="app.js"></script>
